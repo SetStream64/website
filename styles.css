@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap');
+
+/* Grayscale color scheme based on your palette */
+:root {
+    --background-dark: #181818;
+    --background-light: #f5f5f5;
+    --text-light: #f0f0f0;
+    --text-dark: #222222;
+    --primary: #b0b0b0;
+    --primary-dark: #888888;
+    --primary-light: #e0e0e0;
+    --secondary: #a0a0a0;
+    --secondary-light: #e0e0e0;
+    --accent: #cccccc;
+    --card-bg-dark: rgba(24, 24, 24, 0.5);
+    --card-bg-light: rgba(255, 255, 255, 0.85);
+    --nav-dark: rgba(24, 24, 24, 0.7);
+    --nav-light: rgba(255, 255, 255, 0.85);
+    --border-radius: 16px;
+    --border-radius-sm: 10px;
+    --transition: all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+    --box-shadow-dark: 0 10px 30px rgba(176, 176, 176, 0.1);
+    --box-shadow-light: 0 5px 20px rgba(0, 0, 0, 0.08);
+    --glass-blur: 12px;
+    --border-light: 1px solid rgba(255, 255, 255, 0.1);
+    --border-dark: 1px solid rgba(0, 0, 0, 0.1);
+    --glow: 0 0 15px rgba(176, 176, 176, 0.5);
+    --glow-light: 0 0 15px rgba(136, 136, 136, 0.3);
+}
+
+body {
+    font-family: 'Space Grotesk', sans-serif;
+    background-color: var(--background-light);
+    color: var(--text-dark);
+    transition: var(--transition);
+}
+
+header, footer {
+    text-align: center;
+    background-color: var(--card-bg-light);
+    color: var(--text-dark);
+    padding: 1rem 0;
+    border-radius: var(--border-radius-sm);
+    box-shadow: none;
+    margin-top: 2rem;
+    position: relative;
+}
+
+a {
+    color: var(--primary-dark);
+    transition: var(--transition);
+}
+
+a:hover {
+    color: var(--text-dark);
+}
+
+.top-bar {
+    display: flex;
+    align-items: center;
+    height: 50px;
+    background-color: var(--nav-light);
+    padding: 0 1rem;
+    box-shadow: var(--box-shadow-light);
+    max-width: 900px;
+    margin: 1rem auto 0;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.07); /* Subtle border */
+}
+
+.logo {
+    height: 32px;
+    width: auto;
+}
+
+footer {
+    background-color: var(--card-bg-light);
+    color: var(--text-dark);
+    border-radius: var(--border-radius-sm);
+    box-shadow: none;
+    margin-top: 2rem;
+    position: relative;
+    opacity: 0.7;
+    display: flex;
+    justify-content: center;
+    padding: 2.5rem 0 1rem 0; /* Top padding for separator space */
+}
+
+.footer-content {
+    width: 900px; /* Same as .top-bar max-width */
+    max-width: 90vw;
+    background: transparent;
+    box-sizing: border-box;
+    text-align: left;
+    margin: 0 auto;
+}
+
+footer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--accent);
+    opacity: 0.2;
+    border-radius: 2px;
+}
+
+.main-centerpiece {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4rem; /* Space before next content */
+}
+
+.main-centerpiece h1 {
+    font-size: 3rem;
+    text-align: center;
+    color: var(--text-dark);
+    text-shadow: 0 0 24px var(--glow), 0 0 8px var(--primary-light);
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 1.3rem;
+    color: var(--primary-dark);
+    margin-top: 1.2rem;
+    opacity: 0.8;
+    letter-spacing: 1px;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: var(--background-dark);
+        color: var(--text-light);
+    }
+
+    header, footer {
+        background-color: var(--card-bg-dark);
+        color: var(--text-light);
+        box-shadow: none;
+    }
+
+    a {
+        color: var(--primary-light);
+    }
+
+    a:hover {
+        color: var(--text-light);
+    }
+
+    .top-bar {
+        background-color: var(--nav-dark);
+        box-shadow: var(--box-shadow-dark);
+    }
+
+    .main-centerpiece h1 {
+        color: var(--text-light);
+        text-shadow: 0 0 32px var(--glow), 0 0 12px var(--primary);
+    }
+}
