@@ -7,6 +7,41 @@ document.addEventListener("DOMContentLoaded", function () {
   let autoScrollTriggered = false;
   let lastScrollY = 0;
 
+  // Utility function to sanitize text against XSS attacks
+  function sanitizeText(text) {
+    if (!text) return "";
+    const element = document.createElement("div");
+    element.textContent = text;
+    return element.innerHTML;
+  }
+
+  // URL sanitization function
+  function sanitizeURL(url) {
+    if (!url) return "#";
+    // Only allow http and https protocols
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      // Create an anchor element to use the browser's URL parsing
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      // Allow trusted domains
+      const trustedDomains = [
+        "github.com",
+        "tiktok.com",
+        "x.com",
+        "instagram.com",
+        "threads.com",
+        "youtube.com",
+        "twitch.tv",
+        "reddit.com",
+        "osu.ppy.sh",
+      ];
+      if (trustedDomains.some((domain) => anchor.hostname.endsWith(domain))) {
+        return url;
+      }
+    }
+    return "#"; // Return a safe default if URL is invalid
+  }
+
   // GitHub portfolio functionality
   const username = "setstream64";
   const portfolioContainer = document.querySelector(".portfolio-container");
@@ -15,8 +50,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // Function to fetch GitHub repositories
   async function fetchGitHubRepos() {
     try {
+      // Prevent potential script injection by validating username
+      const validUsername = username.replace(/[^\w-]/g, "");
       const response = await fetch(
-        `https://api.github.com/users/${username}/repos?sort=updated&per_page=100`,
+        `https://api.github.com/users/${validUsername}/repos?sort=updated&per_page=100`,
       );
       if (!response.ok) {
         throw new Error("Failed to fetch repositories");
@@ -27,7 +64,13 @@ document.addEventListener("DOMContentLoaded", function () {
       return repos.filter((repo) => !repo.fork && repo.name !== "SetStream64");
     } catch (error) {
       console.error("Error fetching GitHub repositories:", error);
-      portfolioContainer.innerHTML = `<p>Failed to load repositories. Please try again later.</p>`;
+      const errorMsg = document.createElement("p");
+      errorMsg.textContent =
+        "Failed to load repositories. Please try again later.";
+      portfolioContainer.innerHTML = "";
+      portfolioContainer.appendChild(errorMsg);
+      // Add console.error for debugging but don't expose error details to users
+      console.error("Error details:", error);
       return [];
     }
   }
@@ -35,8 +78,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // Function to fetch commit count for a repository
   async function fetchCommitCount(repo) {
     try {
+      // Validate repo name to prevent injection
+      const validRepoName = repo.name.replace(/[^\w-.]/g, "");
       const response = await fetch(
-        `https://api.github.com/repos/${username}/${repo.name}/commits?per_page=1`,
+        `https://api.github.com/repos/${username}/${validRepoName}/commits?per_page=1`,
         { headers: { Accept: "application/vnd.github.v3+json" } },
       );
       const linkHeader = response.headers.get("Link");
@@ -61,7 +106,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // Function to render repositories
   async function renderRepos(repos) {
     if (repos.length === 0) {
-      portfolioContainer.innerHTML = `<p>No repositories found.</p>`;
+      const noReposMsg = document.createElement("p");
+      noReposMsg.textContent = "No repositories found.";
+      portfolioContainer.innerHTML = "";
+      portfolioContainer.appendChild(noReposMsg);
       return;
     }
 
@@ -72,7 +120,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const displayRepos = repos.slice(0, maxRepos);
 
     // Fetch commit counts for each repository
-    portfolioContainer.innerHTML = `<p class="loading-text">Analyzing repositories...</p>`;
+    portfolioContainer.innerHTML = "";
+    const loadingMsg = document.createElement("p");
+    loadingMsg.className = "loading-text";
+    loadingMsg.textContent = "Analyzing repositories...";
+    portfolioContainer.appendChild(loadingMsg);
 
     try {
       // Add commit counts to repos
@@ -103,46 +155,112 @@ document.addEventListener("DOMContentLoaded", function () {
         reordered.splice(1, 0, maxCommitRepo);
       }
 
-      // Create HTML for repositories
-      const reposHTML = reordered
-        .map((repo, index) => {
-          const isFeatured = index === 1; // Middle position (0-based index)
+      // Clear the container
+      portfolioContainer.innerHTML = "";
 
-          return `
-          <div class="portfolio-item ${isFeatured ? "featured" : ""}">
-            <h3 class="repo-name">${repo.name}</h3>
-            <p class="repo-description">${repo.description || "No description provided"}</p>
-            <div class="repo-stats">
-              <span class="repo-stat">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
-                </svg>
-                ${repo.stargazers_count}
-              </span>
-              <span class="repo-stat">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 100-1.5.75.75 0 000 1.5z"/>
-                </svg>
-                ${repo.forks_count}
-              </span>
-              <span class="repo-stat">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10.5 7.75a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm1.43.75a4.002 4.002 0 01-7.86 0H.75a.75.75 0 110-1.5h3.32a4.001 4.001 0 017.86 0h3.32a.75.75 0 110 1.5h-3.32z"/>
-                </svg>
-                ${repo.commitCount}
-              </span>
-            </div>
-            <a href="${repo.html_url}" class="repo-link" target="_blank" rel="noopener noreferrer">View Project</a>
-          </div>
-        `;
-        })
-        .join("");
+      // Create repository elements safely
+      reordered.forEach((repo, index) => {
+        const isFeatured = index === 1; // Middle position (0-based index)
 
-      portfolioContainer.innerHTML = reposHTML;
+        // Create main container
+        const itemDiv = document.createElement("div");
+        itemDiv.className = `portfolio-item ${isFeatured ? "featured" : ""}`;
+
+        // Create and add repo name
+        const nameHeading = document.createElement("h3");
+        nameHeading.className = "repo-name";
+        nameHeading.textContent = repo.name;
+        itemDiv.appendChild(nameHeading);
+
+        // Create and add description
+        const descPara = document.createElement("p");
+        descPara.className = "repo-description";
+        descPara.textContent = repo.description || "No description provided";
+        itemDiv.appendChild(descPara);
+
+        // Create stats container
+        const statsDiv = document.createElement("div");
+        statsDiv.className = "repo-stats";
+
+        // Star count
+        const starSpan = document.createElement("span");
+        starSpan.className = "repo-stat";
+        starSpan.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+        </svg>`;
+        const starText = document.createTextNode(` ${repo.stargazers_count}`);
+        starSpan.appendChild(starText);
+        statsDiv.appendChild(starSpan);
+
+        // Fork count
+        const forkSpan = document.createElement("span");
+        forkSpan.className = "repo-stat";
+        forkSpan.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+          <path fill-rule="evenodd" d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 100-1.5.75.75 0 000 1.5z"/>
+        </svg>`;
+        const forkText = document.createTextNode(` ${repo.forks_count}`);
+        forkSpan.appendChild(forkText);
+        statsDiv.appendChild(forkSpan);
+
+        // Commit count
+        const commitSpan = document.createElement("span");
+        commitSpan.className = "repo-stat";
+        commitSpan.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+          <path fill-rule="evenodd" d="M10.5 7.75a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm1.43.75a4.002 4.002 0 01-7.86 0H.75a.75.75 0 110-1.5h3.32a4.001 4.001 0 017.86 0h3.32a.75.75 0 110 1.5h-3.32z"/>
+        </svg>`;
+        const commitText = document.createTextNode(` ${repo.commitCount}`);
+        commitSpan.appendChild(commitText);
+        statsDiv.appendChild(commitSpan);
+
+        itemDiv.appendChild(statsDiv);
+
+        // Create and add link
+        const repoLink = document.createElement("a");
+        repoLink.className = "repo-link";
+        repoLink.textContent = "View Project";
+        repoLink.href = sanitizeURL(repo.html_url);
+        repoLink.target = "_blank";
+        repoLink.rel = "noopener noreferrer";
+        itemDiv.appendChild(repoLink);
+
+        // Add the complete item to the container
+        portfolioContainer.appendChild(itemDiv);
+      });
     } catch (error) {
       console.error("Error processing repositories:", error);
-      portfolioContainer.innerHTML = `<p>Failed to process repositories. Please try again later.</p>`;
+      portfolioContainer.innerHTML = "";
+      const errorMsg = document.createElement("p");
+      errorMsg.textContent =
+        "Failed to process repositories. Please try again later.";
+      portfolioContainer.appendChild(errorMsg);
+      // Add console.error for debugging but don't expose error details to users
+      console.error("Error details:", error);
     }
+  }
+
+  // Function to sanitize and handle social links
+  function secureSocialLinks() {
+    const socialLinks = document.querySelectorAll(".social-link");
+
+    socialLinks.forEach((link) => {
+      // Get the href attribute
+      const url = link.getAttribute("href");
+
+      // Sanitize the URL
+      const safeURL = sanitizeURL(url);
+
+      // Set the sanitized URL back to the element
+      link.setAttribute("href", safeURL);
+
+      // Add click handler for additional security
+      link.addEventListener("click", function (e) {
+        // If URL was sanitized to '#', prevent navigation
+        if (safeURL === "#") {
+          e.preventDefault();
+          console.warn("Potentially unsafe URL was blocked");
+        }
+      });
+    });
   }
 
   // Load repositories
@@ -210,4 +328,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Update on load
   updateActiveNavButton();
+
+  // Secure all social links
+  secureSocialLinks();
 });
