@@ -7,6 +7,153 @@ document.addEventListener("DOMContentLoaded", function () {
   let autoScrollTriggered = false;
   let lastScrollY = 0;
 
+  // GitHub portfolio functionality
+  const username = "setstream64";
+  const portfolioContainer = document.querySelector(".portfolio-container");
+  const maxRepos = 3; // Maximum number of repositories to display
+
+  // Function to fetch GitHub repositories
+  async function fetchGitHubRepos() {
+    try {
+      const response = await fetch(
+        `https://api.github.com/users/${username}/repos?sort=updated&per_page=100`,
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch repositories");
+      }
+
+      const repos = await response.json();
+      // Filter out forked repositories and the SetStream64 repo (GitHub bio)
+      return repos.filter((repo) => !repo.fork && repo.name !== "SetStream64");
+    } catch (error) {
+      console.error("Error fetching GitHub repositories:", error);
+      portfolioContainer.innerHTML = `<p>Failed to load repositories. Please try again later.</p>`;
+      return [];
+    }
+  }
+
+  // Function to fetch commit count for a repository
+  async function fetchCommitCount(repo) {
+    try {
+      const response = await fetch(
+        `https://api.github.com/repos/${username}/${repo.name}/commits?per_page=1`,
+        { headers: { Accept: "application/vnd.github.v3+json" } },
+      );
+      const linkHeader = response.headers.get("Link");
+
+      if (linkHeader) {
+        // Extract commit count from Link header
+        const match = linkHeader.match(/page=(\d+)>; rel="last"/);
+        if (match) {
+          return parseInt(match[1]);
+        }
+      }
+
+      // If no Link header, count from all pages
+      const commits = await response.json();
+      return commits.length;
+    } catch (error) {
+      console.error(`Error fetching commits for ${repo.name}:`, error);
+      return 0;
+    }
+  }
+
+  // Function to render repositories
+  async function renderRepos(repos) {
+    if (repos.length === 0) {
+      portfolioContainer.innerHTML = `<p>No repositories found.</p>`;
+      return;
+    }
+
+    // Sort repositories by stars initially (for a default order)
+    repos.sort((a, b) => b.stargazers_count - a.stargazers_count);
+
+    // Limit to max number of repos
+    const displayRepos = repos.slice(0, maxRepos);
+
+    // Fetch commit counts for each repository
+    portfolioContainer.innerHTML = `<p class="loading-text">Analyzing repositories...</p>`;
+
+    try {
+      // Add commit counts to repos
+      for (let i = 0; i < displayRepos.length; i++) {
+        displayRepos[i].commitCount = await fetchCommitCount(displayRepos[i]);
+      }
+
+      // Find the repo with most commits
+      let maxCommitRepo = displayRepos[0];
+      displayRepos.forEach((repo) => {
+        if (repo.commitCount > maxCommitRepo.commitCount) {
+          maxCommitRepo = repo;
+        }
+      });
+
+      // Reorganize repos to have most commits in the middle
+      let reordered = [...displayRepos];
+      const maxCommitIndex = reordered.findIndex(
+        (repo) => repo === maxCommitRepo,
+      );
+
+      // Only reorder if necessary
+      if (maxCommitIndex !== 1) {
+        // 1 is the middle index of 3 items (0-based)
+        // Remove the max commit repo
+        reordered.splice(maxCommitIndex, 1);
+        // Insert it in the middle
+        reordered.splice(1, 0, maxCommitRepo);
+      }
+
+      // Create HTML for repositories
+      const reposHTML = reordered
+        .map((repo, index) => {
+          const isFeatured = index === 1; // Middle position (0-based index)
+
+          return `
+          <div class="portfolio-item ${isFeatured ? "featured" : ""}">
+            <h3 class="repo-name">${repo.name}</h3>
+            <p class="repo-description">${repo.description || "No description provided"}</p>
+            <div class="repo-stats">
+              <span class="repo-stat">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                </svg>
+                ${repo.stargazers_count}
+              </span>
+              <span class="repo-stat">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 100-1.5.75.75 0 000 1.5z"/>
+                </svg>
+                ${repo.forks_count}
+              </span>
+              <span class="repo-stat">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10.5 7.75a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm1.43.75a4.002 4.002 0 01-7.86 0H.75a.75.75 0 110-1.5h3.32a4.001 4.001 0 017.86 0h3.32a.75.75 0 110 1.5h-3.32z"/>
+                </svg>
+                ${repo.commitCount}
+              </span>
+            </div>
+            <a href="${repo.html_url}" class="repo-link" target="_blank" rel="noopener noreferrer">View Project</a>
+          </div>
+        `;
+        })
+        .join("");
+
+      portfolioContainer.innerHTML = reposHTML;
+    } catch (error) {
+      console.error("Error processing repositories:", error);
+      portfolioContainer.innerHTML = `<p>Failed to process repositories. Please try again later.</p>`;
+    }
+  }
+
+  // Load repositories
+  async function loadPortfolio() {
+    const repos = await fetchGitHubRepos();
+    await renderRepos(repos);
+  }
+
+  // Call the function to load the portfolio
+  loadPortfolio();
+
   function updateActiveNavButton() {
     let currentSection = "home";
 
