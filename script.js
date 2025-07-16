@@ -41,6 +41,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Add click event
         helper.addEventListener("click", function () {
+          // Temporarily disable auto scroll
+          autoScrollTriggered = true;
+
           const portfolioSection = document.getElementById("portfolio");
           if (portfolioSection) {
             portfolioSection.scrollIntoView({
@@ -48,6 +51,11 @@ document.addEventListener("DOMContentLoaded", function () {
               block: "start",
             });
           }
+
+          // Re-enable auto-scroll after a delay
+          setTimeout(() => {
+            autoScrollTriggered = false;
+          }, 1500);
         });
       }
     });
@@ -388,7 +396,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Auto-scroll to portfolio section when near the end of home section
-    if (nearSectionEnd && nextSection && deltaY > 0) {
+    // Auto-scroll to next section when near the end of current section
+    if (nearSectionEnd && nextSection && deltaY > 0 && !autoScrollTriggered) {
       // Accumulate scroll amount
       scrollThreshold -= deltaY;
 
@@ -399,6 +408,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // If threshold is reached, scroll to next section
       if (scrollThreshold <= 0) {
+        autoScrollTriggered = true;
+
         nextSection.scrollIntoView({
           behavior: "smooth",
           block: "start",
@@ -406,6 +417,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Reset threshold after scrolling
         scrollThreshold = 100;
+
+        // Re-enable auto-scroll after a delay
+        setTimeout(() => {
+          autoScrollTriggered = false;
+        }, 1500);
       } else {
         // Reset threshold after 300ms of no scrolling
         scrollTimeoutId = setTimeout(() => {
@@ -441,6 +457,11 @@ document.addEventListener("DOMContentLoaded", function () {
             block: "start",
           });
         }
+
+        // Re-enable auto-scroll after a delay
+        setTimeout(() => {
+          autoScrollTriggered = false;
+        }, 1500);
       } else {
         // Reset threshold after 300ms of no scrolling
         scrollTimeoutId = setTimeout(() => {
@@ -466,6 +487,34 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Remove the original scroll arrow/indicator since we now use section-scroll-helper
 
+  // Add specific handler for mobile connect button
+  const mobileConnectBtn = document.querySelector(".mobile-connect-btn");
+  if (mobileConnectBtn) {
+    mobileConnectBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      // Temporarily disable auto scroll detection
+      autoScrollTriggered = true;
+
+      // Force scroll to the connect section
+      const connectSection = document.querySelector("#connect");
+      if (connectSection) {
+        connectSection.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+
+        // Update URL without page jump
+        history.pushState(null, null, "#connect");
+      }
+
+      // Add a longer delay before re-enabling auto scroll detection
+      setTimeout(() => {
+        autoScrollTriggered = false;
+      }, 2000);
+    });
+  }
+
   // Implement smooth scrolling for all section navigation
   document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
     anchor.addEventListener("click", function (e) {
@@ -475,6 +524,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const targetElement = document.querySelector(targetId);
 
       if (targetElement) {
+        // Temporarily disable auto scroll detection
+        let originalAutoScrollTriggered = autoScrollTriggered;
+        autoScrollTriggered = true;
+
+        // Force scroll to the target section
         targetElement.scrollIntoView({
           behavior: "smooth",
           block: "start",
@@ -482,6 +536,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Update URL without page jump
         history.pushState(null, null, targetId);
+
+        // Add a delay before re-enabling auto scroll detection
+        setTimeout(() => {
+          autoScrollTriggered = originalAutoScrollTriggered;
+        }, 1500);
       }
     });
   });
