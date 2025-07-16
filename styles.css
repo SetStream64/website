@@ -175,7 +175,7 @@ footer::before {
     padding-top: 70px;
 }
 
-.main-centerpiece h1 {
+.desktop-title {
     font-size: 3rem;
     text-align: center;
     color: var(--text-dark);
@@ -187,6 +187,13 @@ footer::before {
     margin: 0;
 }
 
+.mobile-logo {
+    display: none;
+    height: 80px;
+    width: auto;
+    margin: 0 auto;
+}
+
 .subtitle {
     text-align: center;
     font-size: 1.3rem;
@@ -196,7 +203,33 @@ footer::before {
     letter-spacing: 1px;
 }
 
+.mobile-connect-btn {
+    display: none;
+    margin-top: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary-light);
+    color: var(--text-dark);
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 500;
+    transition: var(--transition);
+    border: 1px solid var(--primary);
+    box-shadow: var(--box-shadow-light);
+    text-align: center;
+}
+
+.mobile-connect-btn:hover {
+    background-color: var(--primary);
+    transform: translateY(-3px);
+    box-shadow: var(--box-shadow-light), var(--glow-light);
+}
+
 .scroll-indicator {
+    display: none; /* Hide the original scroll indicator */
+}
+
+.section-scroll-helper {
     position: absolute;
     bottom: 30px;
     left: 50%;
@@ -205,15 +238,37 @@ footer::before {
     flex-direction: column;
     align-items: center;
     animation: bounce 2s infinite;
+    cursor: pointer;
+    padding: 15px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+    z-index: 10;
+}
+
+.section-scroll-helper:hover {
+    background-color: rgba(176, 176, 176, 0.1);
 }
 
 .scroll-arrow {
+    display: none; /* Hide the original scroll arrow */
+}
+
+.section-scroll-arrow {
     width: 0;
     height: 0;
     border-left: 10px solid transparent;
     border-right: 10px solid transparent;
     border-top: 12px solid var(--primary-dark);
     margin-bottom: 5px;
+    cursor: pointer;
+    transition:
+        transform 0.3s ease,
+        border-top-color 0.3s ease;
+}
+
+.section-scroll-arrow:hover {
+    transform: translateY(3px);
+    border-top-color: var(--text-dark);
 }
 
 @keyframes bounce {
@@ -232,13 +287,16 @@ footer::before {
     }
 }
 
-.portfolio-section {
+.portfolio-section,
+.connect-section {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: var(--background-light);
     padding: 4rem 2rem;
+    position: relative;
+    box-sizing: border-box; /* Ensure padding is included in height calculation */
 }
 
 .portfolio-content {
@@ -431,7 +489,7 @@ footer::before {
         padding: 0.4rem 0.8rem;
     }
 
-    .main-centerpiece h1 {
+    .desktop-title {
         font-size: 2.5rem;
     }
 
@@ -484,11 +542,31 @@ footer::before {
 /* Small mobile devices */
 @media (max-width: 480px) {
     .top-bar {
-        padding: 0.6rem;
+        display: none; /* Hide the header on phone screens */
     }
 
-    .main-centerpiece h1 {
-        font-size: 2rem;
+    .main-centerpiece {
+        padding-top: 20px; /* Reduce top padding since header is hidden */
+        justify-content: flex-start;
+        padding-top: 15vh; /* Position content higher on the screen */
+        min-height: 100vh; /* Ensure full height for scrolling detection */
+    }
+
+    .section-scroll-helper {
+        bottom: 20px;
+    }
+
+    .desktop-title {
+        display: none;
+    }
+
+    .mobile-logo {
+        display: block;
+        margin-bottom: 1rem;
+    }
+
+    .mobile-connect-btn {
+        display: inline-block;
     }
 
     .subtitle {
@@ -637,19 +715,25 @@ footer::before {
         background-color: var(--primary-light);
     }
 
-    .main-centerpiece h1 {
+    .desktop-title {
         color: var(--text-light);
         text-shadow:
             0 0 32px var(--glow),
             0 0 12px var(--primary);
     }
 
-    .scroll-arrow {
+    .section-scroll-arrow {
         border-top-color: var(--primary-light);
     }
 
-    .portfolio-section {
+    .section-scroll-arrow:hover {
+        border-top-color: var(--text-light);
+    }
+
+    .portfolio-section,
+    .connect-section {
         background-color: var(--background-dark);
+        min-height: 100vh; /* Reaffirm height in dark mode */
     }
 
     .portfolio-content h2 {
@@ -723,6 +807,19 @@ footer::before {
     }
 
     .view-all-button:hover {
+        background-color: var(--primary-light);
+        color: var(--text-dark);
+        box-shadow: var(--box-shadow-dark), var(--glow);
+    }
+
+    .mobile-connect-btn {
+        background-color: var(--primary);
+        color: var(--text-light);
+        border-color: var(--primary-light);
+        box-shadow: var(--box-shadow-dark);
+    }
+
+    .mobile-connect-btn:hover {
         background-color: var(--primary-light);
         color: var(--text-dark);
         box-shadow: var(--box-shadow-dark), var(--glow);

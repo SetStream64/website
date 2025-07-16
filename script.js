@@ -6,6 +6,52 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let autoScrollTriggered = false;
   let lastScrollY = 0;
+  let scrollThreshold = 100; // Threshold for scroll detection
+  let scrollTimeoutId = null;
+
+  // Scroll to top when page is refreshed
+  window.onbeforeunload = function () {
+    window.scrollTo(0, 0);
+  };
+
+  // Ensure we're at the top when the page loads
+  window.addEventListener("load", function () {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+
+    // Set up section scrolling helpers
+    setupSectionScrollHelpers();
+  });
+
+  // Set up scroll helpers for the home section only
+  function setupSectionScrollHelpers() {
+    const sections = document.querySelectorAll("#home");
+
+    sections.forEach((section) => {
+      // Create scroll helper if it doesn't exist
+      let helper = section.querySelector(".section-scroll-helper");
+
+      if (!helper) {
+        helper = document.createElement("div");
+        helper.className = "section-scroll-helper";
+        helper.innerHTML = '<div class="section-scroll-arrow"></div>';
+        section.appendChild(helper);
+
+        // Add click event
+        helper.addEventListener("click", function () {
+          const portfolioSection = document.getElementById("portfolio");
+          if (portfolioSection) {
+            portfolioSection.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        });
+      }
+    });
+  }
 
   // Utility function to sanitize text against XSS attacks
   function sanitizeText(text) {
@@ -299,23 +345,107 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function handleScroll() {
     const currentScrollY = window.scrollY;
+    const deltaY = currentScrollY - lastScrollY;
 
-    // Check if we should trigger auto-scroll
-    if (
-      !autoScrollTriggered &&
-      currentScrollY > lastScrollY &&
-      currentScrollY > 50 &&
-      currentScrollY < window.innerHeight * 0.3
-    ) {
-      autoScrollTriggered = true;
+    // Check if user is near the end of a section - for home and portfolio sections
+    const homeSection = document.querySelector("#home");
+    const portfolioSection = document.querySelector("#portfolio");
+    let nearSectionEnd = false;
+    let nextSection = null;
 
-      // Smooth scroll to portfolio section
-      const portfolioSection = document.getElementById("portfolio");
-      if (portfolioSection) {
-        portfolioSection.scrollIntoView({
+    // Check home section first
+    if (homeSection) {
+      const rect = homeSection.getBoundingClientRect();
+      const sectionBottom = rect.bottom;
+      const viewportHeight = window.innerHeight;
+
+      // If we're near the bottom of the home section and scrolling down
+      if (
+        sectionBottom > 0 &&
+        sectionBottom < viewportHeight * 0.8 &&
+        deltaY > 0
+      ) {
+        nearSectionEnd = true;
+        nextSection = document.querySelector("#portfolio");
+      }
+    }
+
+    // Then check portfolio section
+    if (!nearSectionEnd && portfolioSection) {
+      const rect = portfolioSection.getBoundingClientRect();
+      const sectionBottom = rect.bottom;
+      const viewportHeight = window.innerHeight;
+
+      // If we're near the bottom of the portfolio section and scrolling down
+      if (
+        sectionBottom > 0 &&
+        sectionBottom < viewportHeight * 0.8 &&
+        deltaY > 0
+      ) {
+        nearSectionEnd = true;
+        nextSection = document.querySelector("#connect");
+      }
+    }
+
+    // Auto-scroll to portfolio section when near the end of home section
+    if (nearSectionEnd && nextSection && deltaY > 0) {
+      // Accumulate scroll amount
+      scrollThreshold -= deltaY;
+
+      // Clear any existing timeout
+      if (scrollTimeoutId) {
+        clearTimeout(scrollTimeoutId);
+      }
+
+      // If threshold is reached, scroll to next section
+      if (scrollThreshold <= 0) {
+        nextSection.scrollIntoView({
           behavior: "smooth",
           block: "start",
         });
+
+        // Reset threshold after scrolling
+        scrollThreshold = 100;
+      } else {
+        // Reset threshold after 300ms of no scrolling
+        scrollTimeoutId = setTimeout(() => {
+          scrollThreshold = 100;
+        }, 300);
+      }
+    }
+
+    // Original auto-scroll for home to portfolio
+    if (
+      !autoScrollTriggered &&
+      deltaY > 0 && // Only trigger on downward scrolls
+      currentScrollY > 0 && // User has started scrolling
+      currentScrollY < window.innerHeight * 0.5 // Still in first half of the home screen
+    ) {
+      // Clear any existing timeout
+      if (scrollTimeoutId) {
+        clearTimeout(scrollTimeoutId);
+      }
+
+      // Set threshold for accumulated scroll
+      scrollThreshold -= deltaY;
+
+      // If threshold is reached, scroll to portfolio
+      if (scrollThreshold <= 0) {
+        autoScrollTriggered = true;
+
+        // Smooth scroll to portfolio section
+        const portfolioSection = document.getElementById("portfolio");
+        if (portfolioSection) {
+          portfolioSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      } else {
+        // Reset threshold after 300ms of no scrolling
+        scrollTimeoutId = setTimeout(() => {
+          scrollThreshold = 100;
+        }, 300);
       }
     }
 
@@ -323,11 +453,47 @@ document.addEventListener("DOMContentLoaded", function () {
     updateActiveNavButton();
   }
 
-  // Update on scroll
-  window.addEventListener("scroll", handleScroll);
+  // Update on scroll with throttling for better performance
+  let scrollTimer;
+  window.addEventListener("scroll", function () {
+    if (!scrollTimer) {
+      scrollTimer = setTimeout(function () {
+        handleScroll();
+        scrollTimer = null;
+      }, 10); // Small delay for better performance
+    }
+  });
+
+  // Remove the original scroll arrow/indicator since we now use section-scroll-helper
+
+  // Implement smooth scrolling for all section navigation
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const targetId = this.getAttribute("href");
+      const targetElement = document.querySelector(targetId);
+
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+
+        // Update URL without page jump
+        history.pushState(null, null, targetId);
+      }
+    });
+  });
 
   // Update on load
   updateActiveNavButton();
+
+  // Reset scroll threshold when page is reloaded
+  scrollThreshold = 100;
+
+  // Force scroll to top on page load
+  window.scrollTo(0, 0);
 
   // Secure all social links
   secureSocialLinks();
